@@ -83,10 +83,10 @@ The API checks account ownership on every application request. Passwords are has
 
 ## AI Development Experience
 
-I used **Code0** while testing the app and setting up the backend:
+I used **Code0** to help test the app and check the backend setup. My usage covered three tasks:
 
-1. **Application testing:** Checked the main workflows in the app.
-2. **MongoDB setup:** Used it for connection instructions and database configuration.
-3. **API testing:** Tested Express API requests and checked the responses.
+- **Application testing:** I used Code0 to help check the main workflows, including adding applications, editing details, and changing statuses. I focused on whether the interface reflected the saved data and whether the app behaved as expected.
+- **MongoDB setup:** Code0 helped me work through the connection instructions and database configuration. This included setting `MONGODB_URI`, understanding how the backend connects to MongoDB, and checking possible causes of connection failures.
+- **API testing:** I used Code0 while testing requests to the Express API and reviewing the responses. I checked the returned data and error messages to understand how backend requests affected what appeared in the app.
 
 More details are in [the development notes](docs/ai-development.md).
