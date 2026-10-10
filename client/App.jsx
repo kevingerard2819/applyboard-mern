@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import ApplicationForm from './ApplicationForm.jsx';
+import Agenda from './Agenda.jsx';
 import { statuses } from '../shared/statuses.js';
 import { request } from './api.js';
 
@@ -55,6 +56,11 @@ export default function App() {
   const [busyIds, setBusyIds] = useState(() => new Set());
   const pendingIds = useRef(new Set());
   const [notice, setNotice] = useState('');
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
   async function load(signal) {
     setLoading(true);
     setError('');
@@ -145,6 +151,22 @@ export default function App() {
       unlockApplication(application._id);
     }
   }
+  async function completeFollowUp(application) {
+    if (!lockApplication(application._id)) return;
+    setError('');
+    try {
+      const { application: updated } = await request(`/${application._id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ followUpDate: '', nextStep: '' }),
+      });
+      setApplications((old) => old.map((item) => (item._id === updated._id ? updated : item)));
+      setNotice(`Follow-up completed for ${application.company}.`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      unlockApplication(application._id);
+    }
+  }
   function lockApplication(id) {
     if (pendingIds.current.has(id)) return false;
     pendingIds.current.add(id);
@@ -214,6 +236,15 @@ export default function App() {
               </article>
             ))}
           </section>
+          {!loading && !error && (
+            <Agenda
+              applications={applications}
+              now={now}
+              busyIds={busyIds}
+              onEdit={setForm}
+              onComplete={completeFollowUp}
+            />
+          )}
           <section className="applications" id="applications" aria-labelledby="applications-title">
             <div className="section-heading">
               <div>
@@ -328,6 +359,18 @@ export default function App() {
                                 {application.role}
                               </button>
                               <span>{application.company}</span>
+                              {application.followUpDate &&
+                                !['Offer', 'Rejected'].includes(application.status) && (
+                                  <span>
+                                    Follow up{' '}
+                                    {new Date(
+                                      `${application.followUpDate}T12:00:00`,
+                                    ).toLocaleDateString(undefined, {
+                                      month: 'short',
+                                      day: 'numeric',
+                                    })}
+                                  </span>
+                                )}
                             </div>
                           </div>
                         </td>

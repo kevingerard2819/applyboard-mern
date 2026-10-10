@@ -30,6 +30,10 @@ export const applicationInput = z
     url: url.default(''),
     appliedDate: date.default(''),
     notes: z.string().trim().max(5000).default(''),
+    followUpDate: date.default(''),
+    nextStep: z.string().trim().max(200).default(''),
+    interviewAt: z.union([z.literal(''), z.string().datetime({ offset: true })]).default(''),
+    interviewNotes: z.string().trim().max(1000).default(''),
   })
   .strict();
 

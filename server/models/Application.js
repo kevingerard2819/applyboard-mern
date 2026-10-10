@@ -10,6 +10,10 @@ const applicationSchema = new mongoose.Schema(
     url: { type: String, default: '', maxlength: 2000 },
     appliedDate: { type: String, default: '' },
     notes: { type: String, default: '', maxlength: 5000 },
+    followUpDate: { type: String, default: '' },
+    nextStep: { type: String, default: '', maxlength: 200 },
+    interviewAt: { type: String, default: '' },
+    interviewNotes: { type: String, default: '', maxlength: 1000 },
   },
   { timestamps: true },
 );

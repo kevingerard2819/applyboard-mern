@@ -10,6 +10,8 @@ A MERN application for tracking job applications. Save roles, update their statu
 - Move opportunities through Wishlist, Applied, Interview, Offer, and Rejected.
 - Search companies, roles, and locations; combine search with status filters.
 - Dashboard totals and interview/offer rate derived from saved records.
+- Schedule interviews with a date, local time, and preparation notes; download a one-hour calendar event (`.ics`).
+- Set follow-up dates and next steps. The agenda highlights today’s and overdue follow-ups, and lets you mark them complete.
 - MongoDB persistence, server-side validation, accessible forms, responsive layout, loading and error states.
 - Integration tests exercise a real isolated MongoDB process; GitHub Actions runs tests and the production build.
 
@@ -87,6 +89,8 @@ scripts/dev-local.js    Persistent local MongoDB development helper
 ```
 
 React stores a local copy of server data and updates it only after a successful mutation. Express explicitly validates and selects allowed fields before passing data to Mongoose. Status changes use partial updates so notes and other fields remain intact. The UI computes counts from the full collection, so filtering does not change dashboard totals.
+
+Interview times are stored as ISO timestamps and displayed in the device’s local time zone. Follow-up dates are calendar dates, so they do not shift between time zones. The agenda refreshes each minute while open and excludes Offer and Rejected applications. Completing a follow-up clears its date and next step; scheduling a new one uses the same application form. Reminders appear in the app, with no email or background notifications. Calendar events default to a one-hour duration, which can be edited in your calendar.
 
 | Method | Endpoint                                  | Purpose                |
 | ------ | ----------------------------------------- | ---------------------- |

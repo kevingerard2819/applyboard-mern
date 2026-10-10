@@ -50,6 +50,8 @@ test('create, persist, edit, list and delete an application', async () => {
   const id = created.body.application._id;
   assert.equal(created.body.application.company, 'Acme');
   assert.equal(created.body.application.status, 'Wishlist');
+  assert.equal(created.body.application.followUpDate, '');
+  assert.equal(created.body.application.interviewAt, '');
   assert.equal((await Application.findById(id)).notes, 'Follow up');
   await request(app).patch(`/api/applications/${id}`).send({ status: 'Interview' }).expect(200);
   const list = await request(app).get('/api/applications').expect(200);
@@ -115,4 +117,43 @@ test('malformed JSON and unknown API routes return JSON errors', async () => {
     .expect(400);
   const response = await request(app).get('/api/unknown').expect(404);
   assert.equal(response.body.message, 'API endpoint not found');
+});
+
+test('scheduling persists, rejects invalid dates, and completion preserves application and interview details', async () => {
+  const created = await request(app)
+    .post('/api/applications')
+    .send({
+      company: 'Acme',
+      role: 'Engineer',
+      notes: 'Keep this',
+      followUpDate: '2026-10-10',
+      nextStep: ' Email recruiter ',
+      interviewAt: '2026-10-12T09:30:00+04:00',
+      interviewNotes: 'Technical round',
+    })
+    .expect(201);
+  const id = created.body.application._id;
+  const stored = await Application.findById(id);
+  assert.equal(stored.nextStep, 'Email recruiter');
+  assert.equal(stored.interviewAt, '2026-10-12T09:30:00+04:00');
+  for (const invalid of [
+    { followUpDate: '2026-02-30' },
+    { interviewAt: '2026-10-12T09:30' },
+    { interviewAt: 'nonsense' },
+    { nextStep: 'x'.repeat(201) },
+  ]) {
+    await request(app).patch(`/api/applications/${id}`).send(invalid).expect(400);
+  }
+  await request(app)
+    .patch(`/api/applications/${id}`)
+    .send({ followUpDate: '', nextStep: '' })
+    .expect(200);
+  const result = await request(app).get('/api/applications').expect(200);
+  const saved = result.body.applications[0];
+  assert.equal(saved.followUpDate, '');
+  assert.equal(saved.nextStep, '');
+  assert.equal(saved.company, 'Acme');
+  assert.equal(saved.notes, 'Keep this');
+  assert.equal(saved.interviewNotes, 'Technical round');
+  assert.equal(saved.interviewAt, stored.interviewAt);
 });

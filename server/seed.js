@@ -8,6 +8,8 @@ try {
   if (await Application.exists({})) {
     console.log('Seed skipped: existing applications are preserved.');
   } else {
+    const today = new Date().toISOString().slice(0, 10);
+    const interviewAt = new Date(Date.now() + 2 * 86400000).toISOString();
     await Application.insertMany([
       {
         company: 'Northstar',
@@ -15,12 +17,16 @@ try {
         location: 'Remote',
         status: 'Interview',
         notes: 'Prepare a walkthrough of a recent React project.',
+        interviewAt,
+        interviewNotes: 'Fictional example: technical round and project walkthrough.',
       },
       {
         company: 'Studio Eleven',
         role: 'Full Stack Developer',
         location: 'London · Hybrid',
         status: 'Applied',
+        followUpDate: today,
+        nextStep: 'Ask the recruiter about the next round.',
       },
       {
         company: 'Bloom',

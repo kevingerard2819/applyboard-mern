@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { statuses } from '../shared/statuses.js';
+import { toLocalDateTime } from './schedule.js';
 const empty = {
   company: '',
   role: '',
@@ -8,6 +9,10 @@ const empty = {
   url: '',
   appliedDate: '',
   notes: '',
+  followUpDate: '',
+  nextStep: '',
+  interviewAt: '',
+  interviewNotes: '',
 };
 
 export default function ApplicationForm({ application, onClose, onSave }) {
@@ -16,7 +21,12 @@ export default function ApplicationForm({ application, onClose, onSave }) {
   const submitting = useRef(false);
   const [values, setValues] = useState(() =>
     application
-      ? Object.fromEntries(Object.keys(empty).map((key) => [key, application[key] || empty[key]]))
+      ? {
+          ...Object.fromEntries(
+            Object.keys(empty).map((key) => [key, application[key] || empty[key]]),
+          ),
+          interviewAt: toLocalDateTime(application.interviewAt),
+        }
       : empty,
   );
   const [saving, setSaving] = useState(false);
@@ -28,10 +38,12 @@ export default function ApplicationForm({ application, onClose, onSave }) {
     return () => element.close();
   }, []);
   function field(name) {
+    const update = (event) => setValues((old) => ({ ...old, [name]: event.target.value }));
     return {
       name,
       value: values[name],
-      onChange: (event) => setValues((old) => ({ ...old, [name]: event.target.value })),
+      onChange: update,
+      ...(['appliedDate', 'followUpDate', 'interviewAt'].includes(name) ? { onInput: update } : {}),
     };
   }
   async function submit(event) {
@@ -41,7 +53,10 @@ export default function ApplicationForm({ application, onClose, onSave }) {
     setSaving(true);
     setError('');
     try {
-      await onSave(values);
+      await onSave({
+        ...values,
+        interviewAt: values.interviewAt ? new Date(values.interviewAt).toISOString() : '',
+      });
       onClose();
     } catch (err) {
       setError(err.message);
@@ -119,6 +134,39 @@ export default function ApplicationForm({ application, onClose, onSave }) {
               ))}
             </select>
           </label>
+          <details className="full-width optional-details" open={Boolean(application)}>
+            <summary>
+              Interviews & follow-ups <span>Schedule your next step</span>
+            </summary>
+            <div className="form-grid">
+              <label>
+                Follow-up date
+                <input {...field('followUpDate')} type="date" />
+              </label>
+              <label>
+                Next step
+                <input
+                  {...field('nextStep')}
+                  maxLength={200}
+                  placeholder="e.g. Email the recruiter"
+                />
+              </label>
+              <label className="full-width">
+                Interview date & time
+                <input {...field('interviewAt')} type="datetime-local" />
+                <small className="field-help">Times use your device’s local time zone.</small>
+              </label>
+              <label className="full-width">
+                Interview details
+                <textarea
+                  {...field('interviewNotes')}
+                  rows={2}
+                  maxLength={1000}
+                  placeholder="Round, meeting link, interviewer, or preparation notes"
+                />
+              </label>
+            </div>
+          </details>
           <details className="full-width optional-details" open={Boolean(application)}>
             <summary>
               Additional details <span>Job link, date & notes</span>
