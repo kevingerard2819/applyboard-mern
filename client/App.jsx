@@ -81,11 +81,9 @@ function Workspace({ user, onLogout }) {
       const data = await request('', { signal });
       if (signal?.aborted) return;
       setApplications(data.applications);
-    } catch {
+    } catch (err) {
       if (signal?.aborted) return;
-      setError(
-        'Could not connect to the application server. Check that the API and MongoDB are running.',
-      );
+      setError(err.message);
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
@@ -132,17 +130,24 @@ function Workspace({ user, onLogout }) {
   }
   async function changeStatus(application, newStatus) {
     if (application.status === newStatus) return;
+    await updateApplication(
+      application,
+      { status: newStatus },
+      `${application.company} moved to ${newStatus.toLowerCase()}.`,
+    );
+  }
+  async function updateApplication(application, values, message) {
     if (!lockApplication(application._id)) return;
     setError('');
     try {
       const data = await request(`/${application._id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(values),
       });
       setApplications((old) =>
         old.map((app) => (app._id === application._id ? data.application : app)),
       );
-      setNotice(`${application.company} moved to ${newStatus.toLowerCase()}.`);
+      setNotice(message);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -166,20 +171,11 @@ function Workspace({ user, onLogout }) {
     }
   }
   async function completeFollowUp(application) {
-    if (!lockApplication(application._id)) return;
-    setError('');
-    try {
-      const { application: updated } = await request(`/${application._id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ followUpDate: '', nextStep: '' }),
-      });
-      setApplications((old) => old.map((item) => (item._id === updated._id ? updated : item)));
-      setNotice(`Follow-up completed for ${application.company}.`);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      unlockApplication(application._id);
-    }
+    await updateApplication(
+      application,
+      { followUpDate: '', nextStep: '' },
+      `Follow-up completed for ${application.company}.`,
+    );
   }
   function lockApplication(id) {
     if (pendingIds.current.has(id)) return false;

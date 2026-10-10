@@ -19,11 +19,7 @@ export default function ApplicationForm({ application, onClose, onSave }) {
   const submitting = useRef(false);
   const [values, setValues] = useState(() =>
     application
-      ? {
-          ...Object.fromEntries(
-            Object.keys(empty).map((key) => [key, application[key] || empty[key]]),
-          ),
-        }
+      ? Object.fromEntries(Object.keys(empty).map((key) => [key, application[key] || empty[key]]))
       : empty,
   );
   const [rounds, setRounds] = useState(() =>

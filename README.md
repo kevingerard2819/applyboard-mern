@@ -54,7 +54,7 @@ With Docker installed, start MongoDB using `docker compose up -d`. For Atlas, re
 pnpm dev
 ```
 
-Open **http://127.0.0.1:5173** and create an account. Vite proxies `/api` to Express at port 4000. Optional: `pnpm seed your@email.com` adds four fictional examples to an existing account only when that account has no applications. It uses the database configured in `.env`.
+Open **http://127.0.0.1:5173** and create an account. Vite proxies `/api` to Express at port 4000. Optional: `pnpm seed your@email.com` adds the same eight fictional examples as the demo to an existing account only when that account has no applications. It uses the database configured in `.env`.
 
 For a quick review, click **Try demo workspace**. No credentials or manual seed step are needed. The samples cover all five stages, upcoming interview rounds, due follow-ups, and application dates across the analytics chart. Each click creates a new demo account, so visitors do not overwrite each other's changes. Demo accounts, their applications, and their sessions have expiry dates and MongoDB TTL indexes. Access stops after 24 hours; MongoDB removes expired data asynchronously. Regular accounts are not affected.
 Keep `PORT=4000` when using the development proxy.
