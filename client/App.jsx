@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import ApplicationForm from './ApplicationForm.jsx';
 import Agenda from './Agenda.jsx';
+import KanbanBoard from './KanbanBoard.jsx';
+import Analytics from './Analytics.jsx';
 import { statuses } from '../shared/statuses.js';
 import { request } from './api.js';
 
@@ -52,6 +54,7 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('All');
   const [sort, setSort] = useState('recent');
+  const [view, setView] = useState('list');
   const [form, setForm] = useState(null);
   const [busyIds, setBusyIds] = useState(() => new Set());
   const pendingIds = useRef(new Set());
@@ -118,6 +121,7 @@ export default function App() {
     }
   }
   async function changeStatus(application, newStatus) {
+    if (application.status === newStatus) return;
     if (!lockApplication(application._id)) return;
     setError('');
     try {
@@ -249,44 +253,78 @@ export default function App() {
             <div className="section-heading">
               <div>
                 <h2 id="applications-title">
-                  Application list <span>{applications.length}</span>
+                  {view === 'list'
+                    ? 'Application list'
+                    : view === 'board'
+                      ? 'Application board'
+                      : 'Application analytics'}{' '}
+                  <span>{applications.length}</span>
                 </h2>
-                <p>Select a role to edit its details.</p>
+                <p>
+                  {view === 'board'
+                    ? 'Drag a card to another stage, or use its status menu.'
+                    : view === 'analytics'
+                      ? 'A snapshot of all your applications and recent activity.'
+                      : 'Select a role to edit its details.'}
+                </p>
               </div>
-              <div className="list-tools">
-                <label className="search">
-                  <Icon name="search" />
-                  <input
-                    aria-label="Search applications"
-                    placeholder="Search applications…"
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                  />
-                </label>
-                <select
-                  className="sort-select"
-                  aria-label="Sort applications"
-                  value={sort}
-                  onChange={(event) => setSort(event.target.value)}
-                >
-                  <option value="recent">Newest first</option>
-                  <option value="company">Company A–Z</option>
-                </select>
-              </div>
+              {view !== 'analytics' && (
+                <div className="list-tools">
+                  <label className="search">
+                    <Icon name="search" />
+                    <input
+                      aria-label="Search applications"
+                      placeholder="Search applications…"
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                    />
+                  </label>
+                  <select
+                    className="sort-select"
+                    aria-label="Sort applications"
+                    value={sort}
+                    onChange={(event) => setSort(event.target.value)}
+                  >
+                    <option value="recent">Newest first</option>
+                    <option value="company">Company A–Z</option>
+                  </select>
+                </div>
+              )}
             </div>
-            <div className="filters" role="group" aria-label="Filter by status">
-              {['All', ...statuses].map((item) => (
+            <div className="view-switcher" role="group" aria-label="Application view">
+              {[
+                ['list', 'List'],
+                ['board', 'Kanban'],
+                ['analytics', 'Analytics'],
+              ].map(([key, label]) => (
                 <button
-                  key={item}
-                  aria-pressed={status === item}
-                  className={status === item ? 'selected' : ''}
-                  onClick={() => setStatus(item)}
+                  key={key}
+                  aria-pressed={view === key}
+                  className={view === key ? 'selected' : ''}
+                  onClick={() => {
+                    setView(key);
+                    setStatus('All');
+                  }}
                 >
-                  {item === 'All' ? 'All applications' : item}
-                  <span>{item === 'All' ? applications.length : counts[item]}</span>
+                  {label}
                 </button>
               ))}
             </div>
+            {view === 'list' && (
+              <div className="filters" role="group" aria-label="Filter by status">
+                {['All', ...statuses].map((item) => (
+                  <button
+                    key={item}
+                    aria-pressed={status === item}
+                    className={status === item ? 'selected' : ''}
+                    onClick={() => setStatus(item)}
+                  >
+                    {item === 'All' ? 'All applications' : item}
+                    <span>{item === 'All' ? applications.length : counts[item]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             {error && (
               <div className="error error-banner" role="alert">
                 {error}
@@ -300,6 +338,25 @@ export default function App() {
                 <span className="spinner" />
                 Loading applications…
               </div>
+            ) : view === 'analytics' ? (
+              <Analytics applications={applications} now={now} />
+            ) : view === 'board' ? (
+              <>
+                {query.trim() && (
+                  <p className="board-results">
+                    Showing {filtered.length} of {applications.length} applications.{' '}
+                    <button className="text-button" onClick={() => setQuery('')}>
+                      Clear search
+                    </button>
+                  </p>
+                )}
+                <KanbanBoard
+                  applications={filtered}
+                  busyIds={busyIds}
+                  onStatusChange={changeStatus}
+                  onEdit={setForm}
+                />
+              </>
             ) : !filtered.length ? (
               <div className="empty-state">
                 <span className="empty-icon">

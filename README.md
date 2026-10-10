@@ -4,10 +4,14 @@ A MERN application for tracking job applications. Save roles, update their statu
 
 ![ApplyBoard dashboard](docs/dashboard.png)
 
+[Kanban board](docs/kanban.png) · [Analytics view](docs/analytics.png)
+
 ## Features
 
 - Create, edit, and delete applications with company, role, location, posting URL, applied date, and notes.
 - Move opportunities through Wishlist, Applied, Interview, Offer, and Rejected.
+- Switch between a list and a Kanban board. Drag cards between stages, or use the status menu on touch devices and with a keyboard. Status changes persist after the API confirms the update.
+- View current pipeline counts, active applications, and weekly application activity across eight weeks. Analytics use all records, regardless of search filters; weekly totals use the saved applied date and exclude wishlist entries, future dates, and undated records.
 - Search companies, roles, and locations; combine search with status filters.
 - Dashboard totals and interview/offer rate derived from saved records.
 - Schedule interviews with a date, local time, and preparation notes; download a one-hour calendar event (`.ics`).
