@@ -69,7 +69,6 @@ export default function ApplicationForm({ application, onClose, onSave }) {
       >
         <div className="dialog-heading">
           <div>
-            <span className="eyebrow">YOUR NEXT OPPORTUNITY</span>
             <h2 id="application-form-title">
               {application ? 'Edit application' : 'Add an application'}
             </h2>

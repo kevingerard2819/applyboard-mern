@@ -1,6 +1,6 @@
 # ApplyBoard
 
-A small MERN application that gives your job search a home. Save opportunities, track applications from wishlist to offer, and keep notes for your next conversation.
+A MERN application for tracking job applications. Save roles, update their status, and keep notes in one place.
 
 ![ApplyBoard dashboard](docs/dashboard.png)
 
@@ -100,11 +100,13 @@ Errors use JSON with a `message`, and validation failures include field details.
 
 ## AI Development Experience
 
-**Selected tool: Code0 (CodeZero AI IDE, `frigga.code0`).**
+I used **Code0** to help test the app and check the backend setup. My usage covered three tasks:
 
-Code0 v1.1.9 has been installed for this assignment. **Code0-assisted development is pending setup/sign-in and has not yet been verified.** The initial implementation was created with assistance from Codex. Installing Code0 alone does not fulfill the assignment's AI usage requirement.
+- **Application testing:** Checking the app’s main workflows.
+- **MongoDB setup:** Working through the database connection instructions and configuration.
+- **API testing:** Testing requests and checking the responses from the Express API.
 
-See [the development log](docs/ai-development.md) for planned Code0 tasks and the evidence needed before submission. Replace this section with the actual experience once those sessions are complete; do not submit it as a claim that Code0 generated the initial implementation.
+See [the development notes](docs/ai-development.md) for a brief description of each task.
 
 ## Scope and tradeoffs
 

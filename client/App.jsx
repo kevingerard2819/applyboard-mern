@@ -25,14 +25,6 @@ function Icon({ name, ...props }) {
         <path d="M8 7V4h8v3M3 12a20 20 0 0 0 18 0M12 11v4" />
       </>
     ),
-    arrow: <path d="M5 12h14m-5-5 5 5-5 5" />,
-    calendar: (
-      <>
-        <rect x="3" y="5" width="18" height="16" rx="2" />
-        <path d="M7 3v4m10-4v4M3 11h18" />
-      </>
-    ),
-    star: <path d="m12 3 2.8 5.7 6.3.9-4.5 4.4 1 6.2-5.6-3-5.6 3 1-6.2L3 9.6l6.2-.9Z" />,
   };
   return (
     <svg
@@ -112,7 +104,7 @@ export default function App() {
     setApplications((old) =>
       editing ? old.map((app) => (app._id === editing ? application : app)) : [application, ...old],
     );
-    setNotice(editing ? 'Application updated.' : 'Application added. One step closer!');
+    setNotice(editing ? 'Application updated.' : 'Application added.');
     if (!editing) {
       setQuery('');
       setStatus('All');
@@ -182,16 +174,11 @@ export default function App() {
             Applications<span>{applications.length}</span>
           </a>
         </nav>
-        <div className="sidebar-note">
-          <Icon name="arrow" />
-          <h3>Keep things moving.</h3>
-          <p>Save a role. Update its status. Keep your next steps in the notes.</p>
-        </div>
         <div className="sidebar-bottom">
-          <span className="avatar">Y</span>
+          <span className="avatar">A</span>
           <div>
             <strong>Your workspace</strong>
-            <small>Make room for what’s next</small>
+            <small>Personal application tracker</small>
           </div>
         </div>
       </aside>
@@ -207,9 +194,8 @@ export default function App() {
         <div className="content">
           <div className="page-heading">
             <div>
-              <span className="eyebrow">YOUR JOB SEARCH, ORGANIZED</span>
               <h1>Applications</h1>
-              <p>Track opportunities, update progress, and plan your next move.</p>
+              <p>Keep track of the roles you’re considering and the applications you’ve sent.</p>
             </div>
             <button className="primary-button" disabled={loading} onClick={() => setForm({})}>
               <span className="plus">+</span> Add application
@@ -217,30 +203,14 @@ export default function App() {
           </div>
           <section className="stats" aria-label="Application overview">
             {[
-              [
-                'Total applications',
-                applications.length,
-                'Every opportunity, in one place',
-                'briefcase',
-              ],
-              ['In interviews', counts.Interview, 'Conversations that count', 'calendar'],
-              ['Offers received', counts.Offer, 'Good things are happening', 'star'],
-              [
-                'Interview & offer rate',
-                `${interviewRate}%`,
-                'Of all tracked opportunities',
-                'arrow',
-              ],
-            ].map(([label, value, caption, icon]) => (
+              ['Tracked roles', applications.length],
+              ['Interviews', counts.Interview],
+              ['Offers', counts.Offer],
+              ['Interview / offer rate', `${interviewRate}%`],
+            ].map(([label, value]) => (
               <article className="stat" key={label}>
-                <div>
-                  <span>{label}</span>
-                  <span className="stat-icon">
-                    <Icon name={icon} />
-                  </span>
-                </div>
+                <span>{label}</span>
                 <strong>{loading ? '—' : value}</strong>
-                <small>{caption}</small>
               </article>
             ))}
           </section>
@@ -248,16 +218,16 @@ export default function App() {
             <div className="section-heading">
               <div>
                 <h2 id="applications-title">
-                  Your applications <span>{applications.length}</span>
+                  Application list <span>{applications.length}</span>
                 </h2>
-                <p>A clear view of where you are, and where you’re going.</p>
+                <p>Select a role to edit its details.</p>
               </div>
               <div className="list-tools">
                 <label className="search">
                   <Icon name="search" />
                   <input
                     aria-label="Search applications"
-                    placeholder="Search company, role, location…"
+                    placeholder="Search applications…"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                   />
@@ -297,22 +267,18 @@ export default function App() {
             {loading ? (
               <div className="empty-state" role="status">
                 <span className="spinner" />
-                Loading your opportunities…
+                Loading applications…
               </div>
             ) : !filtered.length ? (
               <div className="empty-state">
                 <span className="empty-icon">
                   <Icon name="briefcase" width="30" height="30" />
                 </span>
-                <h3>
-                  {applications.length
-                    ? 'No matching applications'
-                    : 'Good things start with one application'}
-                </h3>
+                <h3>{applications.length ? 'No matching applications' : 'No applications yet'}</h3>
                 <p>
                   {applications.length
                     ? 'Clear your filters to see all your applications.'
-                    : 'Add your first opportunity and give your next chapter a place to grow.'}
+                    : 'Add a role with its company, status, and any notes you want to keep.'}
                 </p>
                 {!applications.length && (
                   <button className="primary-button" onClick={() => setForm({})}>
@@ -429,10 +395,6 @@ export default function App() {
               </div>
             )}
           </section>
-          <footer className="page-footer">
-            <span>Built for your next big move.</span>
-            <span>ApplyBoard · One opportunity at a time</span>
-          </footer>
         </div>
       </main>
       {notice && (
