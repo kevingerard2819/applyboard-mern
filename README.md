@@ -2,6 +2,8 @@
 
 A MERN application for tracking job applications. Save roles, update their status, and keep notes in one place.
 
+[Live demo](https://applyboard-mern.onrender.com) — click **Try demo workspace** to explore eight sample applications without signing up. The free Render instance may take about a minute to wake up after inactivity.
+
 ![ApplyBoard dashboard](docs/dashboard.png)
 
 [Login page](docs/login.png) · [Kanban board](docs/kanban.png) · [Analytics view](docs/analytics.png)
