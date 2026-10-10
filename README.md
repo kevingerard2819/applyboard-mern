@@ -82,6 +82,19 @@ For an HTTPS deployment, set `NODE_ENV=production` to enable Secure session cook
 
 Older applications are preserved but hidden until explicitly assigned to an account. Create your account, then run `pnpm assign:legacy your@email.com` with `.env` pointing to the same database. This assigns all records without an owner to the specified account; records already owned by an account are left alone.
 
+### Deploy on Render
+
+The included `render.yaml` defines a free Node web service that builds the frontend and serves it with the Express API. Connect this repository through Render's Blueprint setup, or create a Node web service on the `master` branch with these settings:
+
+- Build: `corepack enable && pnpm install --frozen-lockfile && pnpm build`
+- Start: `pnpm start`
+- Environment: `NODE_ENV=production`, `NODE_VERSION=22.22.0`, and `MONGODB_URI` pointing to a MongoDB Atlas database named `applyboard`.
+- Health check: `/api/health`.
+
+Store the database URI in Render's environment settings, never in the repository. Give a dedicated database user read/write access only to `applyboard`, and add Render's outbound IP ranges to Atlas's network access list. Render supplies `PORT` and the `RENDER` flag. The app binds to `0.0.0.0` in production and trusts Render's single HTTPS proxy so origin checks and Secure cookies work on the same public URL.
+
+No seed command is required for reviewers: **Try demo workspace** creates its samples on demand. Render's free service can sleep when idle, so the first visit may take longer. See [Render's web service documentation](https://render.com/docs/web-services) and [free service limits](https://render.com/docs/free).
+
 ### Tests
 
 ```sh
@@ -139,7 +152,7 @@ See [the development notes](docs/ai-development.md) for a brief description of e
 
 ## Scope and tradeoffs
 
-This is an account-based application tracker. The server binds to localhost. All of the signed-in user's records are loaded for a small dashboard. Development requests go through Vite's API proxy, and the production server hosts the frontend and API together.
+This is an account-based application tracker. The server binds to localhost in development and `0.0.0.0` in production. All of the signed-in user's records are loaded for a small dashboard. Development requests go through Vite's API proxy, and the production server hosts the frontend and API together.
 
 Passwords are salted and hashed with Node's scrypt. Random session tokens are stored as hashes in MongoDB and sent in HttpOnly, SameSite=Lax cookies. Sessions expire after seven days, are checked on every protected request, and are revoked on logout. The API assigns ownership and scopes reads, updates, and deletes to that user. Write requests check browser origins, and authentication is limited to 20 attempts per IP in 15 minutes. The limiter is in memory for this single-process demo; a multi-instance deployment would need a shared limiter and trusted proxy configuration. Email verification, password reset, and social sign-in are outside this version's scope.
 

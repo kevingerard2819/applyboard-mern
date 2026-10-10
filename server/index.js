@@ -9,7 +9,8 @@ if (!process.env.MONGODB_URI) {
 
 try {
   await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
-  const server = app.listen(Number(process.env.PORT || 4000), '127.0.0.1', () =>
+  const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+  const server = app.listen(Number(process.env.PORT || 4000), host, () =>
     console.log('ApplyBoard API ready'),
   );
   for (const signal of ['SIGINT', 'SIGTERM']) {
