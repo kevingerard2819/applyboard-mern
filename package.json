@@ -1,0 +1,37 @@
+{
+  "name": "applyboard",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n API,WEB \"node --watch server/index.js\" \"vite --host 127.0.0.1\"",
+    "dev:local": "node scripts/dev-local.js",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "test": "node --test --test-concurrency=1 server/test/*.test.js client/test/*.test.js",
+    "seed": "node server/seed.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "mongoose": "^8.16.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.5.0",
+    "concurrently": "^9.1.2",
+    "mongodb-memory-server": "^10.1.4",
+    "prettier": "^3.9.9",
+    "supertest": "^7.1.1",
+    "vite": "^6.3.5"
+  }
+}
