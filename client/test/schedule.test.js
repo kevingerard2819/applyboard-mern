@@ -53,3 +53,27 @@ test('calendar uses UTC, escapes text, and folds Unicode lines to 75 bytes', () 
   for (const line of calendar.split('\r\n')) assert.ok(Buffer.byteLength(line) <= 75);
   assert.ok(calendar.endsWith('END:VCALENDAR\r\n'));
 });
+
+test('agenda expands scheduled rounds, hides completed/cancelled rounds, and keeps calendar identities separate', () => {
+  const now = new Date('2026-10-10T00:00:00Z');
+  const application = {
+    _id: 'a',
+    company: 'Acme',
+    role: 'Engineer',
+    status: 'Interview',
+    interviewRounds: [
+      { id: 'one', label: 'Technical', at: '2026-10-11T10:00:00Z', status: 'Scheduled', notes: '' },
+      { id: 'two', label: 'Final', at: '2026-10-12T10:00:00Z', status: 'Scheduled', notes: '' },
+      { id: 'three', label: 'Screen', at: '2026-10-13T10:00:00Z', status: 'Completed' },
+      { id: 'four', label: 'Cancelled', at: '2026-10-14T10:00:00Z', status: 'Cancelled' },
+    ],
+  };
+  const { interviews } = getAgenda([application], now);
+  assert.deepEqual(
+    interviews.map((entry) => entry.roundId),
+    ['one', 'two'],
+  );
+  assert.ok(interviewCalendar(interviews[0], now).includes('UID:a-one@applyboard'));
+  assert.ok(interviewCalendar(interviews[1], now).includes('UID:a-two@applyboard'));
+  assert.ok(interviewCalendar(interviews[0], now).includes('Technical'));
+});

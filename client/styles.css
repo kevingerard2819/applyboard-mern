@@ -350,6 +350,67 @@ h1 {
   color: var(--muted);
   font-weight: 400;
 }
+.interview-rounds {
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+}
+.rounds-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rounds-heading h3,
+.rounds-heading strong {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.interview-round {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-top: 14px;
+  background: #fafbfe;
+}
+.interview-round > .rounds-heading {
+  margin-bottom: 14px;
+}
+.activity-history {
+  margin-top: 22px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.activity-history summary {
+  font-size: 13px;
+  font-weight: 500;
+}
+.activity-history summary span {
+  color: var(--muted);
+  margin-left: 8px;
+}
+.activity-history ol {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0 0 0 14px;
+  border-left: 2px solid #d8e5ff;
+  max-height: 240px;
+  overflow: auto;
+}
+.activity-history li {
+  padding: 0 0 16px;
+}
+.activity-history li strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+}
+.activity-history time {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 5px;
+}
 .applications {
   background: white;
   border: 1px solid var(--border);

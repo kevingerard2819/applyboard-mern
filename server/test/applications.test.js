@@ -157,3 +157,84 @@ test('scheduling persists, rejects invalid dates, and completion preserves appli
   assert.equal(saved.interviewNotes, 'Technical round');
   assert.equal(saved.interviewAt, stored.interviewAt);
 });
+
+test('multiple interview rounds persist, reject duplicate IDs, and keep unrelated fields', async () => {
+  const rounds = [
+    {
+      id: '00000000-0000-4000-8000-000000000001',
+      label: ' Recruiter screen ',
+      at: '2026-10-11T10:00:00Z',
+      status: 'Completed',
+      notes: 'Discussed role',
+    },
+    {
+      id: '00000000-0000-4000-8000-000000000002',
+      label: 'Technical',
+      at: '2026-10-13T10:00:00Z',
+      status: 'Scheduled',
+      notes: '',
+    },
+  ];
+  const created = await request(app)
+    .post('/api/applications')
+    .send({ company: 'Acme', role: 'Engineer', notes: 'Keep', interviewRounds: rounds })
+    .expect(201);
+  const id = created.body.application._id;
+  assert.equal(created.body.application.interviewRounds[0].label, 'Recruiter screen');
+  for (const invalid of [
+    [rounds[0], rounds[0]],
+    [{ ...rounds[0], status: 'Passed' }],
+    [{ ...rounds[0], at: 'bad' }],
+    [{ ...rounds[0], label: '' }],
+    [{ ...rounds[0], activity: [] }],
+  ]) {
+    await request(app)
+      .patch(`/api/applications/${id}`)
+      .send({ interviewRounds: invalid })
+      .expect(400);
+  }
+  await request(app).patch(`/api/applications/${id}`).send({ interviewRounds: [] }).expect(200);
+  const saved = await Application.findById(id);
+  assert.equal(saved.interviewRounds.length, 0);
+  assert.equal(saved.notes, 'Keep');
+  assert.ok(saved.activity.some((entry) => entry.message === 'Interview schedule updated'));
+  assert.ok(saved.activity.some((entry) => entry.message === 'Interview round removed: Technical'));
+});
+
+test('activity is server-owned, persisted, unchanged by no-op patches, and capped at 50 entries', async () => {
+  await request(app)
+    .post('/api/applications')
+    .send({ company: 'Acme', role: 'Engineer', activity: [{ message: 'Fake' }] })
+    .expect(400);
+  const created = await request(app)
+    .post('/api/applications')
+    .send({ company: 'Acme', role: 'Engineer' })
+    .expect(201);
+  const id = created.body.application._id;
+  assert.equal(created.body.application.activity[0].message, 'Application created');
+  await request(app).patch(`/api/applications/${id}`).send({ status: 'Wishlist' }).expect(200);
+  assert.equal((await Application.findById(id)).activity.length, 1);
+  await request(app).patch(`/api/applications/${id}`).send({ activity: [] }).expect(400);
+  await request(app)
+    .patch(`/api/applications/${id}`)
+    .send({ status: 'Applied', followUpDate: '2026-10-11' })
+    .expect(200);
+  let saved = await Application.findById(id);
+  assert.ok(
+    saved.activity.some((entry) => entry.message === 'Status changed from Wishlist to Applied'),
+  );
+  assert.ok(saved.activity.some((entry) => entry.message === 'Follow-up scheduled for 2026-10-11'));
+  await Application.findByIdAndUpdate(id, {
+    $set: {
+      activity: Array.from({ length: 50 }, (_, index) => ({
+        message: `Old ${index}`,
+        at: new Date(),
+      })),
+    },
+  });
+  await request(app).patch(`/api/applications/${id}`).send({ role: 'Senior Engineer' }).expect(200);
+  saved = await Application.findById(id);
+  assert.equal(saved.activity.length, 50);
+  assert.equal(saved.activity[0].message, 'Old 1');
+  assert.equal(saved.activity[49].message, 'Application details updated');
+});

@@ -15,9 +15,34 @@ export function getAgenda(applications, now = new Date()) {
       .filter((app) => app.followUpDate && app.followUpDate <= localDate(now))
       .sort((a, b) => a.followUpDate.localeCompare(b.followUpDate)),
     interviews: active
-      .filter((app) => app.interviewAt && new Date(app.interviewAt) >= now)
+      .flatMap((app) =>
+        getInterviewRounds(app).map((round) => ({
+          ...app,
+          roundId: round.id,
+          roundLabel: round.label,
+          interviewAt: round.at,
+          interviewNotes: round.notes,
+          roundStatus: round.status,
+        })),
+      )
+      .filter((app) => app.roundStatus === 'Scheduled' && new Date(app.interviewAt) >= now)
       .sort((a, b) => new Date(a.interviewAt) - new Date(b.interviewAt)),
   };
+}
+
+export function getInterviewRounds(application) {
+  if (application.interviewRounds?.length) return application.interviewRounds;
+  return application.interviewAt
+    ? [
+        {
+          id: 'legacy',
+          label: 'Interview',
+          at: application.interviewAt,
+          notes: application.interviewNotes || '',
+          status: 'Scheduled',
+        },
+      ]
+    : [];
 }
 
 export function interviewCalendar(application, now = new Date()) {
@@ -34,11 +59,11 @@ export function interviewCalendar(application, now = new Date()) {
     'VERSION:2.0',
     'PRODID:-//ApplyBoard//Interview//EN',
     'BEGIN:VEVENT',
-    `UID:${application._id}@applyboard`,
+    `UID:${application._id}${application.roundId && application.roundId !== 'legacy' ? `-${application.roundId}` : ''}@applyboard`,
     `DTSTAMP:${stamp(now)}`,
     `DTSTART:${stamp(start)}`,
     `DTEND:${stamp(new Date(start.getTime() + 60 * 60 * 1000))}`,
-    `SUMMARY:${escape(`${application.company} — ${application.role} interview`)}`,
+    `SUMMARY:${escape(`${application.company} — ${application.role} · ${application.roundLabel || 'Interview'}`)}`,
     `DESCRIPTION:${escape(application.interviewNotes || '')}`,
     'END:VEVENT',
     'END:VCALENDAR',

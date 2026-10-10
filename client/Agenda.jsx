@@ -70,7 +70,7 @@ export default function Agenda({ applications, now, busyIds, onEdit, onComplete 
         {interviews.length ? (
           <ul>
             {interviews.map((application) => (
-              <li key={application._id}>
+              <li key={`${application._id}-${application.roundId}`}>
                 <div className="agenda-item-copy">
                   <button
                     className="role-link"
@@ -79,7 +79,9 @@ export default function Agenda({ applications, now, busyIds, onEdit, onComplete 
                   >
                     {application.company}
                   </button>
-                  <p>{application.role}</p>
+                  <p>
+                    {application.roundLabel} · {application.role}
+                  </p>
                   <time dateTime={application.interviewAt}>
                     {new Date(application.interviewAt).toLocaleString(undefined, {
                       month: 'short',
@@ -92,7 +94,7 @@ export default function Agenda({ applications, now, busyIds, onEdit, onComplete 
                 <button
                   className="secondary-button"
                   onClick={() => calendarDownload(application)}
-                  aria-label={`Download calendar event for ${application.company}`}
+                  aria-label={`Download ${application.roundLabel} calendar event for ${application.company}`}
                 >
                   Calendar ↗
                 </button>

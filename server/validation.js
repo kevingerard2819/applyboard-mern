@@ -21,6 +21,16 @@ const url = z
     }
   }, 'Use an http or https URL');
 
+const interviewRound = z
+  .object({
+    id: z.string().uuid(),
+    label: z.string().trim().min(1, 'Round name is required').max(100),
+    at: z.string().datetime({ offset: true }),
+    status: z.enum(['Scheduled', 'Completed', 'Cancelled']).default('Scheduled'),
+    notes: z.string().trim().max(1000).default(''),
+  })
+  .strict();
+
 export const applicationInput = z
   .object({
     company: z.string().trim().min(1, 'Company is required').max(100),
@@ -34,6 +44,14 @@ export const applicationInput = z
     nextStep: z.string().trim().max(200).default(''),
     interviewAt: z.union([z.literal(''), z.string().datetime({ offset: true })]).default(''),
     interviewNotes: z.string().trim().max(1000).default(''),
+    interviewRounds: z
+      .array(interviewRound)
+      .max(10)
+      .refine(
+        (rounds) => new Set(rounds.map((round) => round.id)).size === rounds.length,
+        'Round IDs must be unique',
+      )
+      .default([]),
   })
   .strict();
 

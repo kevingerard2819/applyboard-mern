@@ -47,7 +47,10 @@ app.get('/api/applications', async (req, res) => {
 app.post('/api/applications', async (req, res) => {
   const result = applicationInput.safeParse(req.body);
   if (!result.success) return invalidInput(res, result.error);
-  const application = await Application.create(result.data);
+  const application = await Application.create({
+    ...result.data,
+    activity: [{ message: 'Application created' }],
+  });
   res.status(201).json({ application });
 });
 
@@ -60,9 +63,66 @@ app.use('/api/applications/:id', (req, res, next) => {
 app.patch('/api/applications/:id', async (req, res) => {
   const result = applicationPatch.safeParse(req.body);
   if (!result.success) return invalidInput(res, result.error);
+  const previous = await Application.findById(req.params.id).lean();
+  if (!previous) return res.status(404).json({ message: 'Application not found' });
+  const changes = Object.keys(result.data).filter(
+    (key) =>
+      JSON.stringify(previous[key] ?? (key === 'interviewRounds' ? [] : '')) !==
+      JSON.stringify(result.data[key]),
+  );
+  const messages = [];
+  if (changes.includes('interviewRounds')) {
+    const oldRounds = previous.interviewRounds || [];
+    for (const round of result.data.interviewRounds) {
+      const old = oldRounds.find((item) => item.id === round.id);
+      if (!old) messages.push(`Interview round added: ${round.label}`);
+      else if (old.status !== round.status)
+        messages.push(`${round.label}: ${old.status} → ${round.status}`);
+      else if (old.at !== round.at) messages.push(`Interview rescheduled: ${round.label}`);
+    }
+    for (const old of oldRounds) {
+      if (!result.data.interviewRounds.some((round) => round.id === old.id))
+        messages.push(`Interview round removed: ${old.label}`);
+    }
+  }
+  if (changes.includes('status'))
+    messages.push(`Status changed from ${previous.status} to ${result.data.status}`);
+  if (
+    changes.includes('interviewRounds') ||
+    changes.includes('interviewAt') ||
+    changes.includes('interviewNotes')
+  )
+    messages.push('Interview schedule updated');
+  if (changes.includes('followUpDate'))
+    messages.push(
+      result.data.followUpDate
+        ? `Follow-up scheduled for ${result.data.followUpDate}`
+        : 'Follow-up completed or cleared',
+    );
+  if (
+    changes.some(
+      (key) =>
+        !['status', 'interviewRounds', 'interviewAt', 'interviewNotes', 'followUpDate'].includes(
+          key,
+        ),
+    )
+  )
+    messages.push('Application details updated');
   const application = await Application.findByIdAndUpdate(
     req.params.id,
-    { $set: result.data },
+    {
+      $set: result.data,
+      ...(messages.length
+        ? {
+            $push: {
+              activity: {
+                $each: messages.map((message) => ({ message, at: new Date() })),
+                $slice: -50,
+              },
+            },
+          }
+        : {}),
+    },
     { new: true, runValidators: true },
   );
   if (!application) return res.status(404).json({ message: 'Application not found' });
