@@ -22,8 +22,9 @@ try {
     });
   }
 } catch (error) {
+  const code = Number.isInteger(error.code) ? `, code ${error.code}` : '';
   console.error(
-    `Unable to connect to MongoDB (${error.name}). Check MONGODB_URI and database availability.`,
+    `Unable to connect to MongoDB (${error.name}${code}). Check MONGODB_URI and database availability.`,
   );
   process.exit(1);
 }
