@@ -21,6 +21,7 @@ const activitySchema = new mongoose.Schema(
 
 const applicationSchema = new mongoose.Schema(
   {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
     company: { type: String, required: true, trim: true, maxlength: 100 },
     role: { type: String, required: true, trim: true, maxlength: 150 },
     location: { type: String, trim: true, default: '', maxlength: 100 },
@@ -38,5 +39,5 @@ const applicationSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-applicationSchema.index({ status: 1, createdAt: -1 });
+applicationSchema.index({ userId: 1, status: 1, createdAt: -1 });
 export const Application = mongoose.model('Application', applicationSchema);

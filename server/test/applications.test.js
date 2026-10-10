@@ -2,15 +2,26 @@ import { before, after, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import request from 'supertest';
+import httpRequest from 'supertest';
 import { app } from '../app.js';
 import { Application } from '../models/Application.js';
+import { User, Session } from '../auth.js';
 
 let mongo;
+let client;
+let userId;
+const request = () => client;
 before(
   async () => {
     mongo = await MongoMemoryServer.create();
     await mongoose.connect(mongo.getUri());
+    await Promise.all([User.init(), Session.init()]);
+    client = httpRequest.agent(app);
+    const registered = await client
+      .post('/api/auth/register')
+      .send({ name: 'Test User', email: 'owner@example.test', password: 'test-password-123' })
+      .expect(201);
+    userId = registered.body.user._id;
   },
   { timeout: 180000 },
 );
@@ -78,6 +89,7 @@ test('reject invalid fields, dates, unsafe links, and MongoDB operators', async 
 
 test('validate patches and distinguish malformed IDs from missing records', async () => {
   const { _id } = await Application.create({
+    userId,
     company: 'Acme',
     role: 'Engineer',
     status: 'Applied',
@@ -94,8 +106,8 @@ test('validate patches and distinguish malformed IDs from missing records', asyn
 
 test('search uses literal text and can be combined with a status filter', async () => {
   await Application.create([
-    { company: 'A.cme', role: 'Frontend Engineer', status: 'Applied' },
-    { company: 'Acme', role: 'Backend Engineer', status: 'Interview' },
+    { userId, company: 'A.cme', role: 'Frontend Engineer', status: 'Applied' },
+    { userId, company: 'Acme', role: 'Backend Engineer', status: 'Interview' },
   ]);
   const literal = await request(app).get('/api/applications').query({ q: '.' }).expect(200);
   assert.equal(literal.body.applications.length, 1);

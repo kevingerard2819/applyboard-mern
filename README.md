@@ -4,10 +4,11 @@ A MERN application for tracking job applications. Save roles, update their statu
 
 ![ApplyBoard dashboard](docs/dashboard.png)
 
-[Kanban board](docs/kanban.png) · [Analytics view](docs/analytics.png)
+[Login page](docs/login.png) · [Kanban board](docs/kanban.png) · [Analytics view](docs/analytics.png)
 
 ## Features
 
+- Create an account, sign in, and sign out. Each account has its own private applications, board, and analytics.
 - Create, edit, and delete applications with company, role, location, posting URL, applied date, and notes.
 - Move opportunities through Wishlist, Applied, Interview, Offer, and Rejected.
 - Switch between a list and a Kanban board. Drag cards between stages, or use the status menu on touch devices and with a keyboard. Status changes persist after the API confirms the update.
@@ -50,7 +51,7 @@ With Docker installed, start MongoDB using `docker compose up -d`. For Atlas, re
 pnpm dev
 ```
 
-Open **http://127.0.0.1:5173**. Vite proxies `/api` to Express at port 4000. Optional: `pnpm seed` adds four fictional examples only when the database is empty.
+Open **http://127.0.0.1:5173** and create an account. Vite proxies `/api` to Express at port 4000. Optional: `pnpm seed your@email.com` adds four fictional examples to an existing account only when that account has no applications. It uses the database configured in `.env`.
 Keep `PORT=4000` when using the development proxy.
 
 ### No MongoDB installed?
@@ -61,6 +62,8 @@ pnpm dev:local
 
 This downloads and starts a **real MongoDB server** and launches the API and frontend. The first run needs internet access and may take a few minutes. Data persists locally in `.cache/mongo-data`. Stop with Ctrl+C. This helper is for local development, and does not need a `.env` connection string.
 
+To run the seed or legacy assignment commands with this helper, keep it running and copy the local MongoDB URI printed in its terminal into `.env` as `MONGODB_URI`. The port may change when the helper restarts.
+
 ### Production build
 
 ```sh
@@ -69,6 +72,12 @@ pnpm start
 ```
 
 With a configured MongoDB connection, Express serves the built React app and API at **http://127.0.0.1:4000**.
+
+For an HTTPS deployment, set `NODE_ENV=production` to enable Secure session cookies and `CLIENT_ORIGIN=https://your-domain.example` to allow the deployed frontend's origin. Production cookies require HTTPS. Keep the default development settings when running on localhost.
+
+### Existing records from before accounts
+
+Older applications are preserved but hidden until explicitly assigned to an account. Create your account, then run `pnpm assign:legacy your@email.com` with `.env` pointing to the same database. This assigns all records without an owner to the specified account; records already owned by an account are left alone.
 
 ### Tests
 
@@ -100,13 +109,17 @@ Interview times are stored as ISO timestamps and displayed in the device’s loc
 
 Completed and cancelled rounds remain in the application but are excluded from upcoming interviews. Each round has a stable identifier and a separate calendar event. Older single-interview records appear as an existing round and are converted when saved, with no manual database migration required. Activity history is maintained by the server and cannot be supplied or edited through API input. It starts with new changes for records created before this feature and is removed when the application is deleted.
 
-| Method | Endpoint                                  | Purpose                |
-| ------ | ----------------------------------------- | ---------------------- |
-| GET    | `/api/health`                             | Database readiness     |
-| GET    | `/api/applications?q=text&status=Applied` | List/search/filter     |
-| POST   | `/api/applications`                       | Create                 |
-| PATCH  | `/api/applications/:id`                   | Update selected fields |
-| DELETE | `/api/applications/:id`                   | Delete                 |
+| Method | Endpoint                                  | Purpose                    |
+| ------ | ----------------------------------------- | -------------------------- |
+| GET    | `/api/health`                             | Database readiness         |
+| POST   | `/api/auth/register`                      | Create account and session |
+| POST   | `/api/auth/login`                         | Sign in                    |
+| GET    | `/api/auth/me`                            | Current profile            |
+| POST   | `/api/auth/logout`                        | Revoke session             |
+| GET    | `/api/applications?q=text&status=Applied` | List/search/filter         |
+| POST   | `/api/applications`                       | Create                     |
+| PATCH  | `/api/applications/:id`                   | Update selected fields     |
+| DELETE | `/api/applications/:id`                   | Delete                     |
 
 Errors use JSON with a `message`, and validation failures include field details. Posting links allow only HTTP(S); search treats user text as a literal string rather than executable regex syntax.
 
@@ -122,6 +135,8 @@ See [the development notes](docs/ai-development.md) for a brief description of e
 
 ## Scope and tradeoffs
 
-This is a personal, single-workspace demo with no authentication or user isolation. The server binds to localhost. All records are loaded for a small dashboard. Development requests go through Vite's API proxy, and the production server hosts the frontend and API together.
+This is an account-based application tracker. The server binds to localhost. All of the signed-in user's records are loaded for a small dashboard. Development requests go through Vite's API proxy, and the production server hosts the frontend and API together.
+
+Passwords are salted and hashed with Node's scrypt. Random session tokens are stored as hashes in MongoDB and sent in HttpOnly, SameSite=Lax cookies. Sessions expire after seven days, are checked on every protected request, and are revoked on logout. The API assigns ownership and scopes reads, updates, and deletes to that user. Write requests check browser origins, and authentication is limited to 20 attempts per IP in 15 minutes. The limiter is in memory for this single-process demo; a multi-instance deployment would need a shared limiter and trusted proxy configuration. Email verification, password reset, and social sign-in are outside this version's scope.
 
 The interface uses Google Fonts with system fallbacks. No external service is required to store application data beyond the configured MongoDB instance.

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { Application } from './models/Application.js';
 import { statuses } from '../shared/statuses.js';
 import { applicationInput, applicationPatch } from './validation.js';
+import { auth, requireUser, sameOrigin } from './auth.js';
 
 export const app = express();
 app.disable('x-powered-by');
@@ -18,12 +19,18 @@ app.get('/api/health', (_req, res) => {
   res.status(connected ? 200 : 503).json({ status: connected ? 'ok' : 'unavailable' });
 });
 
-app.use('/api/applications', (_req, res, next) => {
+app.use(['/api/applications', '/api/auth'], (_req, res, next) => {
   if (mongoose.connection.readyState !== 1) {
     return res
       .status(503)
       .json({ message: 'The database is unavailable. Please try again shortly.' });
   }
+  next();
+});
+app.use('/api', sameOrigin);
+app.use('/api/auth', auth);
+app.use('/api/applications', requireUser, (_req, res, next) => {
+  res.set('Cache-Control', 'no-store');
   next();
 });
 
@@ -32,7 +39,7 @@ app.get('/api/applications', async (req, res) => {
   if (typeof q !== 'string' || q.length > 100 || (status && !statuses.includes(status))) {
     return res.status(400).json({ message: 'Invalid search or status filter' });
   }
-  const filter = {};
+  const filter = { userId: req.user._id };
   if (status) filter.status = status;
   if (q.trim()) {
     const literal = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -49,6 +56,7 @@ app.post('/api/applications', async (req, res) => {
   if (!result.success) return invalidInput(res, result.error);
   const application = await Application.create({
     ...result.data,
+    userId: req.user._id,
     activity: [{ message: 'Application created' }],
   });
   res.status(201).json({ application });
@@ -63,7 +71,7 @@ app.use('/api/applications/:id', (req, res, next) => {
 app.patch('/api/applications/:id', async (req, res) => {
   const result = applicationPatch.safeParse(req.body);
   if (!result.success) return invalidInput(res, result.error);
-  const previous = await Application.findById(req.params.id).lean();
+  const previous = await Application.findOne({ _id: req.params.id, userId: req.user._id }).lean();
   if (!previous) return res.status(404).json({ message: 'Application not found' });
   const changes = Object.keys(result.data).filter(
     (key) =>
@@ -108,8 +116,8 @@ app.patch('/api/applications/:id', async (req, res) => {
     )
   )
     messages.push('Application details updated');
-  const application = await Application.findByIdAndUpdate(
-    req.params.id,
+  const application = await Application.findOneAndUpdate(
+    { _id: req.params.id, userId: req.user._id },
     {
       $set: result.data,
       ...(messages.length
@@ -130,7 +138,10 @@ app.patch('/api/applications/:id', async (req, res) => {
 });
 
 app.delete('/api/applications/:id', async (req, res) => {
-  const application = await Application.findByIdAndDelete(req.params.id);
+  const application = await Application.findOneAndDelete({
+    _id: req.params.id,
+    userId: req.user._id,
+  });
   if (!application) return res.status(404).json({ message: 'Application not found' });
   res.status(204).end();
 });

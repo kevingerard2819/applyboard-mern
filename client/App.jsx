@@ -3,6 +3,7 @@ import ApplicationForm from './ApplicationForm.jsx';
 import Agenda from './Agenda.jsx';
 import KanbanBoard from './KanbanBoard.jsx';
 import Analytics from './Analytics.jsx';
+import AccountGate from './AccountGate.jsx';
 import { statuses } from '../shared/statuses.js';
 import { request } from './api.js';
 
@@ -48,6 +49,14 @@ function Icon({ name, ...props }) {
 }
 
 export default function App() {
+  return (
+    <AccountGate>
+      {(user, onLogout) => <Workspace key={user._id} user={user} onLogout={onLogout} />}
+    </AccountGate>
+  );
+}
+
+function Workspace({ user, onLogout }) {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -55,6 +64,7 @@ export default function App() {
   const [status, setStatus] = useState('All');
   const [sort, setSort] = useState('recent');
   const [view, setView] = useState('list');
+  const [loggingOut, setLoggingOut] = useState(false);
   const [form, setForm] = useState(null);
   const [busyIds, setBusyIds] = useState(() => new Set());
   const pendingIds = useRef(new Set());
@@ -201,9 +211,9 @@ export default function App() {
           </a>
         </nav>
         <div className="sidebar-bottom">
-          <span className="avatar">A</span>
+          <span className="avatar">{user.name.slice(0, 1).toUpperCase()}</span>
           <div>
-            <strong>Your workspace</strong>
+            <strong>{user.name}</strong>
             <small>Personal application tracker</small>
           </div>
         </div>
@@ -213,9 +223,26 @@ export default function App() {
           <span>
             Workspace <span className="breadcrumb">/</span> <strong>Applications</strong>
           </span>
-          <span className="local-badge">
-            <span /> Personal tracker
-          </span>
+          <div className="account-toolbar">
+            <span className="local-badge">
+              <span /> Personal tracker
+            </span>
+            <button
+              className="text-button"
+              disabled={loggingOut || busyIds.size > 0 || Boolean(form)}
+              onClick={async () => {
+                setLoggingOut(true);
+                try {
+                  await onLogout();
+                } catch (err) {
+                  setError(err.message);
+                  setLoggingOut(false);
+                }
+              }}
+            >
+              {loggingOut ? 'Signing out…' : 'Sign out'}
+            </button>
+          </div>
         </header>
         <div className="content">
           <div className="page-heading">

@@ -19,6 +19,7 @@ const web = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', 
   stdio: 'inherit',
 });
 console.log('Local MongoDB ready. Application data persists in .cache/mongo-data.');
+console.log(`Local MongoDB URI: ${mongo.getUri('applyboard')}`);
 let stopping = false;
 async function stop(code = 0) {
   if (stopping) return;

@@ -4,6 +4,14 @@ import { request } from '../api.js';
 
 afterEach(() => mock.restoreAll());
 
+test('unauthorized auth requests retain HTTP status and use the auth endpoint', async () => {
+  mock.method(globalThis, 'fetch', async (url) => {
+    assert.equal(url, '/api/auth/me');
+    return Response.json({ message: 'Please sign in to continue.' }, { status: 401 });
+  });
+  await assert.rejects(request('/me', {}, '/api/auth'), { status: 401 });
+});
+
 test('proxy HTML errors produce a readable message instead of a JSON parser error', async () => {
   mock.method(
     globalThis,
