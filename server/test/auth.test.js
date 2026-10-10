@@ -19,7 +19,7 @@ const account = {
 };
 before(
   async () => {
-    mongo = await MongoMemoryServer.create();
+    mongo = await MongoMemoryServer.create({ instance: { launchTimeout: 60000 } });
     await mongoose.connect(mongo.getUri());
     await Promise.all([User.init(), Session.init()]);
     first = request.agent(app);

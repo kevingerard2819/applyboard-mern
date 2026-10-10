@@ -11,7 +11,7 @@ before(
     process.env.NODE_ENV = 'production';
     process.env.RENDER = 'true';
     ({ app } = await import('../app.js'));
-    mongo = await MongoMemoryServer.create();
+    mongo = await MongoMemoryServer.create({ instance: { launchTimeout: 60000 } });
     await mongoose.connect(mongo.getUri());
   },
   { timeout: 180000 },
