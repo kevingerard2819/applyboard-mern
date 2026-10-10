@@ -3,12 +3,16 @@ import mongoose from 'mongoose';
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual, createHash } from 'node:crypto';
 import { promisify } from 'node:util';
 import { z } from 'zod';
+import { Application } from './models/Application.js';
+import { sampleApplications } from './sampleApplications.js';
 
 const scrypt = promisify(scryptCallback);
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   passwordHash: { type: String, required: true, select: false },
+  isDemo: { type: Boolean, default: false },
+  expiresAt: { type: Date, index: { expires: 0 } },
 });
 export const User = mongoose.model('User', userSchema);
 export const Session = mongoose.model(
@@ -28,7 +32,12 @@ const cookieOptions = {
   path: '/',
 };
 const tokenHash = (token) => createHash('sha256').update(token).digest('hex');
-const publicUser = (user) => ({ _id: user._id, name: user.name, email: user.email });
+const publicUser = (user) => ({
+  _id: user._id,
+  name: user.name,
+  email: user.email,
+  ...(user.isDemo ? { isDemo: true } : {}),
+});
 const credentials = z
   .object({
     email: z.string().trim().toLowerCase().email().max(254),
@@ -57,12 +66,15 @@ function sessionToken(req) {
 }
 async function createSession(user, res) {
   const token = randomBytes(32).toString('hex');
+  const maxAge = user.isDemo
+    ? Math.max(0, new Date(user.expiresAt).getTime() - Date.now())
+    : sessionAge;
   await Session.create({
     tokenHash: tokenHash(token),
     userId: user._id,
-    expiresAt: new Date(Date.now() + sessionAge),
+    expiresAt: new Date(Date.now() + maxAge),
   });
-  res.cookie(cookieName, token, { ...cookieOptions, maxAge: sessionAge });
+  res.cookie(cookieName, token, { ...cookieOptions, maxAge });
 }
 export async function requireUser(req, res, next) {
   const token = sessionToken(req);
@@ -70,8 +82,10 @@ export async function requireUser(req, res, next) {
     token &&
     (await Session.findOne({ tokenHash: tokenHash(token), expiresAt: { $gt: new Date() } }).lean());
   const user = session && (await User.findById(session.userId).lean());
-  if (!user) return res.status(401).json({ message: 'Please sign in to continue.' });
+  if (!user || (user.isDemo && new Date(user.expiresAt) <= new Date()))
+    return res.status(401).json({ message: 'Please sign in to continue.' });
   req.user = publicUser(user);
+  if (user.isDemo) req.demoExpiresAt = user.expiresAt;
   next();
 }
 
@@ -135,6 +149,22 @@ auth.post('/register', limitAttempts, async (req, res) => {
 });
 // A dummy hash keeps a missing account on the same password-verification path.
 const dummyHash = await hashPassword(randomBytes(32).toString('hex'));
+
+auth.post('/demo', limitAttempts, async (req, res) => {
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const user = await User.create({
+    name: 'Demo workspace',
+    email: `${randomBytes(16).toString('hex')}@demo.applyboard.invalid`,
+    passwordHash: await hashPassword(randomBytes(32).toString('hex')),
+    isDemo: true,
+    expiresAt,
+  });
+  await Application.insertMany(sampleApplications(user._id, new Date(), expiresAt));
+  const oldToken = sessionToken(req);
+  if (oldToken) await Session.deleteOne({ tokenHash: tokenHash(oldToken) });
+  await createSession(user, res);
+  res.status(201).json({ user: publicUser(user) });
+});
 auth.post('/login', limitAttempts, async (req, res) => {
   const result = credentials.safeParse(req.body);
   if (!result.success)

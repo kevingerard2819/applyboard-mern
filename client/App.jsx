@@ -245,6 +245,14 @@ function Workspace({ user, onLogout }) {
           </div>
         </header>
         <div className="content">
+          {user.isDemo && (
+            <div className="demo-banner" role="note">
+              <strong>Demo workspace</strong>
+              <span>
+                Fictional sample data. You can edit freely; this workspace expires after 24 hours.
+              </span>
+            </div>
+          )}
           <div className="page-heading">
             <div>
               <h1>Applications</h1>

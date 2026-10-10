@@ -22,6 +22,7 @@ const activitySchema = new mongoose.Schema(
 const applicationSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+    expiresAt: { type: Date, index: { expires: 0 } },
     company: { type: String, required: true, trim: true, maxlength: 100 },
     role: { type: String, required: true, trim: true, maxlength: 150 },
     location: { type: String, trim: true, default: '', maxlength: 100 },

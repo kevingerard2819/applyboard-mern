@@ -57,6 +57,7 @@ app.post('/api/applications', async (req, res) => {
   const application = await Application.create({
     ...result.data,
     userId: req.user._id,
+    ...(req.demoExpiresAt ? { expiresAt: req.demoExpiresAt } : {}),
     activity: [{ message: 'Application created' }],
   });
   res.status(201).json({ application });

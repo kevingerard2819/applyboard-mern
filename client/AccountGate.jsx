@@ -58,6 +58,22 @@ export default function AccountGate({ children }) {
     setError('');
     setMode('login');
   }
+  async function startDemo() {
+    if (submitting.current) return;
+    submitting.current = true;
+    setBusy(true);
+    setError('');
+    try {
+      const data = await authRequest('/demo', { method: 'POST' });
+      setValues({ name: '', email: '', password: '' });
+      setUser(data.user);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      submitting.current = false;
+      setBusy(false);
+    }
+  }
   if (checking)
     return (
       <div className="account-loading" role="status">
@@ -155,6 +171,12 @@ export default function AccountGate({ children }) {
               </button>
             </fieldset>
           </form>
+          <div className="demo-entry">
+            <button className="secondary-button" disabled={busy} onClick={startDemo}>
+              Try demo workspace
+            </button>
+            <small>No signup needed. Includes 8 sample applications.</small>
+          </div>
           <p className="account-mode">
             {mode === 'register' ? 'Already have an account?' : 'New to ApplyBoard?'}{' '}
             <button

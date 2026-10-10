@@ -137,6 +137,43 @@ test('expired sessions cannot read data and logout invalidates the server sessio
   await first.get('/api/applications').expect(401);
   await request(app).get('/api/auth/me').set('Cookie', activeCookie).expect(401);
 });
+test('demo visitors get isolated seeded workspaces, editable records and expiring sessions', async () => {
+  const demoA = request.agent(app);
+  const demoB = request.agent(app);
+  const resultA = await demoA.post('/api/auth/demo').expect(201);
+  const resultB = await demoB.post('/api/auth/demo').expect(201);
+  assert.equal(resultA.body.user.isDemo, true);
+  assert.notEqual(resultA.body.user._id, resultB.body.user._id);
+  const listA = (await demoA.get('/api/applications').expect(200)).body.applications;
+  const listB = (await demoB.get('/api/applications').expect(200)).body.applications;
+  assert.equal(listA.length, 8);
+  assert.equal(listB.length, 8);
+  assert.equal(new Set(listA.map((record) => record.status)).size, 5);
+  assert.ok(listA.some((record) => record.interviewRounds.length > 0));
+  assert.ok(listA.some((record) => record.followUpDate));
+  assert.ok(listA.every((record) => record.expiresAt));
+  assert.equal((await second.get('/api/applications').expect(200)).body.applications.length, 0);
+  await demoA.patch(`/api/applications/${listA[0]._id}`).send({ status: 'Offer' }).expect(200);
+  await demoB.patch(`/api/applications/${listA[0]._id}`).send({ status: 'Offer' }).expect(404);
+  const newRecord = await demoA
+    .post('/api/applications')
+    .send({ company: 'Demo addition', role: 'Engineer' })
+    .expect(201);
+  const demoUser = await User.findById(resultA.body.user._id);
+  assert.equal(
+    new Date(newRecord.body.application.expiresAt).getTime(),
+    demoUser.expiresAt.getTime(),
+  );
+  assert.ok(demoUser.expiresAt.getTime() <= Date.now() + 24 * 60 * 60 * 1000);
+  const session = await Session.findOne({ userId: demoUser._id });
+  assert.ok(Math.abs(session.expiresAt.getTime() - demoUser.expiresAt.getTime()) < 100);
+  await User.updateOne({ _id: demoUser._id }, { expiresAt: new Date(Date.now() - 1000) });
+  await demoA.get('/api/applications').expect(401);
+  await demoB.get('/api/applications').expect(200);
+  const normalUser = await User.findOne({ email: account.email });
+  assert.equal(normalUser.expiresAt, undefined);
+});
+
 test('authentication attempts are limited', async () => {
   let response;
   for (let count = 0; count < 21; count++) {

@@ -9,6 +9,7 @@ A MERN application for tracking job applications. Save roles, update their statu
 ## Features
 
 - Create an account, sign in, and sign out. Each account has its own private applications, board, and analytics.
+- Try the app without signing up using **Try demo workspace** on the login page. Each visitor gets eight fictional sample applications in an isolated, editable workspace that expires after 24 hours.
 - Create, edit, and delete applications with company, role, location, posting URL, applied date, and notes.
 - Move opportunities through Wishlist, Applied, Interview, Offer, and Rejected.
 - Switch between a list and a Kanban board. Drag cards between stages, or use the status menu on touch devices and with a keyboard. Status changes persist after the API confirms the update.
@@ -52,6 +53,8 @@ pnpm dev
 ```
 
 Open **http://127.0.0.1:5173** and create an account. Vite proxies `/api` to Express at port 4000. Optional: `pnpm seed your@email.com` adds four fictional examples to an existing account only when that account has no applications. It uses the database configured in `.env`.
+
+For a quick review, click **Try demo workspace**. No credentials or manual seed step are needed. The samples cover all five stages, upcoming interview rounds, due follow-ups, and application dates across the analytics chart. Each click creates a new demo account, so visitors do not overwrite each other's changes. Demo accounts, their applications, and their sessions have expiry dates and MongoDB TTL indexes. Access stops after 24 hours; MongoDB removes expired data asynchronously. Regular accounts are not affected.
 Keep `PORT=4000` when using the development proxy.
 
 ### No MongoDB installed?
@@ -109,17 +112,18 @@ Interview times are stored as ISO timestamps and displayed in the device’s loc
 
 Completed and cancelled rounds remain in the application but are excluded from upcoming interviews. Each round has a stable identifier and a separate calendar event. Older single-interview records appear as an existing round and are converted when saved, with no manual database migration required. Activity history is maintained by the server and cannot be supplied or edited through API input. It starts with new changes for records created before this feature and is removed when the application is deleted.
 
-| Method | Endpoint                                  | Purpose                    |
-| ------ | ----------------------------------------- | -------------------------- |
-| GET    | `/api/health`                             | Database readiness         |
-| POST   | `/api/auth/register`                      | Create account and session |
-| POST   | `/api/auth/login`                         | Sign in                    |
-| GET    | `/api/auth/me`                            | Current profile            |
-| POST   | `/api/auth/logout`                        | Revoke session             |
-| GET    | `/api/applications?q=text&status=Applied` | List/search/filter         |
-| POST   | `/api/applications`                       | Create                     |
-| PATCH  | `/api/applications/:id`                   | Update selected fields     |
-| DELETE | `/api/applications/:id`                   | Delete                     |
+| Method | Endpoint                                  | Purpose                     |
+| ------ | ----------------------------------------- | --------------------------- |
+| GET    | `/api/health`                             | Database readiness          |
+| POST   | `/api/auth/register`                      | Create account and session  |
+| POST   | `/api/auth/login`                         | Sign in                     |
+| POST   | `/api/auth/demo`                          | Start seeded demo workspace |
+| GET    | `/api/auth/me`                            | Current profile             |
+| POST   | `/api/auth/logout`                        | Revoke session              |
+| GET    | `/api/applications?q=text&status=Applied` | List/search/filter          |
+| POST   | `/api/applications`                       | Create                      |
+| PATCH  | `/api/applications/:id`                   | Update selected fields      |
+| DELETE | `/api/applications/:id`                   | Delete                      |
 
 Errors use JSON with a `message`, and validation failures include field details. Posting links allow only HTTP(S); search treats user text as a literal string rather than executable regex syntax.
 

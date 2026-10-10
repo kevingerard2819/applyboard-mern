@@ -17,6 +17,33 @@
   gap: 12px;
   color: var(--muted);
 }
+.demo-entry {
+  margin-top: 18px;
+  text-align: center;
+}
+.demo-entry .secondary-button {
+  width: 100%;
+  padding: 12px;
+}
+.demo-entry small {
+  display: block;
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.demo-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  border: 1px solid #cbdcff;
+  background: #edf3ff;
+  color: #365788;
+  padding: 13px 16px;
+  border-radius: 7px;
+  margin-bottom: 25px;
+  font-size: 11px;
+  line-height: 1.6;
+}
 .account-page {
   display: grid;
   grid-template-columns: 1fr 1fr;
